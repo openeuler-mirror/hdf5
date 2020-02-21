@@ -35,7 +35,6 @@ HDF5 development headers and libraries.
 %patch0 -p1
 %patch1 -p1
 %patch2 -p1
-%patch3 -p1
 
 sed -i -e '/^STATIC_AVAILABLE=/s/=.*/=no/' */*/h5[cf]*.in
 autoreconf -f -i
