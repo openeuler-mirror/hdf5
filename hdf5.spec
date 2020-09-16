@@ -154,7 +154,7 @@ make -C build check
 %{_rpmmacrodir}/macros.hdf5
 
 %changelog
-* Wed Sep 15 2020 shaoqiang kang <kangshaoqiang1@huawei.com> - 1.8.20-8
+* Wed Sep 16 2020 shaoqiang kang <kangshaoqiang1@huawei.com> - 1.8.20-8
 - Modify source
 
 * Tue Oct 22 2019 openEuler Buildteam <buildteam@openeuler.org> - 1.8.20-7
