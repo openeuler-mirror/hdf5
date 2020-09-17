@@ -1,11 +1,11 @@
 Name: hdf5
 Version: 1.8.20
-Release: 7
+Release: 8
 Summary: A data model, library, and file format for storing and managing data
 License: BSD
 
-URL: https://portal.hdfgroup.org/display/HDF5/HDF5
-Source0: https://support.hdfgroup.org/ftp/HDF5/current18/src/hdf5-%{version}.tar.bz2
+URL:     https://portal.hdfgroup.org/display/HDF5/HDF5
+Source0: https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.20/src/hdf5-1.8.20.tar.bz2
 
 Patch0: hdf5-LD_LIBRARY_PATH.patch
 Patch1: hdf5-mpi.patch
@@ -154,5 +154,8 @@ make -C build check
 %{_rpmmacrodir}/macros.hdf5
 
 %changelog
+* Tue Sep 15 2020 shaoqiang kang <kangshaoqiang1@openeuler.org> - 1.8.20-8
+- Modify source
+
 * Tue Oct 22 2019 openEuler Buildteam <buildteam@openeuler.org> - 1.8.20-7
 - Package init
