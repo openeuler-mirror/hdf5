@@ -1,6 +1,6 @@
 Name: hdf5
 Version: 1.8.20
-Release: 8
+Release: 9
 Summary: A data model, library, and file format for storing and managing data
 License: BSD
 
@@ -10,6 +10,11 @@ Source0: https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.20/src
 Patch0: hdf5-LD_LIBRARY_PATH.patch
 Patch1: hdf5-mpi.patch
 Patch2: hdf5-ldouble-ppc64le.patch
+Patch3: CVE-2018-17233.patch
+Patch4: CVE-2018-17234.patch
+Patch5: CVE-2018-17237.patch
+Patch6: CVE-2018-17434-CVE-2018-17437.patch
+Patch7: CVE-2018-17438.patch
 
 BuildRequires: gcc, gcc-c++
 BuildRequires: krb5-devel, openssl-devel, zlib-devel, gcc-gfortran, time
@@ -31,10 +36,7 @@ Requires: gcc-gfortran%{?_isa}
 HDF5 development headers and libraries.
 
 %prep
-%setup -q -n %{name}-%{version}
-%patch0 -p1
-%patch1 -p1
-%patch2 -p1
+%autosetup -n %{name}-%{version} -p1
 
 sed -i -e '/^STATIC_AVAILABLE=/s/=.*/=no/' */*/h5[cf]*.in
 autoreconf -f -i
@@ -154,6 +156,9 @@ make -C build check
 %{_rpmmacrodir}/macros.hdf5
 
 %changelog
+* Mon Nov 9 2020 wangxiao <wangxiao65@huawei.com> - 1.8.20-9
+- fix CVE-2018-17233 CVE-2018-17234 CVE-2018-17237 CVE-2018-17434 CVE-2018-17437 CVE-2018-17438
+
 * Tue Sep 15 2020 shaoqiang kang <kangshaoqiang1@openeuler.org> - 1.8.20-8
 - Modify source
 
