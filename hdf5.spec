@@ -1,6 +1,6 @@
 Name: hdf5
 Version: 1.8.20
-Release: 9
+Release: 10
 Summary: A data model, library, and file format for storing and managing data
 License: BSD
 
@@ -15,6 +15,12 @@ Patch4: CVE-2018-17234.patch
 Patch5: CVE-2018-17237.patch
 Patch6: CVE-2018-17434-CVE-2018-17437.patch
 Patch7: CVE-2018-17438.patch
+Patch8: CVE-2017-17506.patch
+Patch9: fix-compile-error.patch
+Patch10: CVE-2018-17432.patch
+Patch11: CVE-2018-17435.patch
+Patch12: CVE-2018-13869-CVE-2018-13870.patch
+Patch13: CVE-2018-13873.patch
 
 BuildRequires: gcc, gcc-c++
 BuildRequires: krb5-devel, openssl-devel, zlib-devel, gcc-gfortran, time
@@ -156,6 +162,9 @@ make -C build check
 %{_rpmmacrodir}/macros.hdf5
 
 %changelog
+* Sat Dec 12 2020 wangxiao <wangxiao65@huawei.com> - 1.8.20-10
+- fix CVE-2017-17506 CVE-2018-17432 CVE-2018-17435 CVE-2018-13869 CVE-2018-13870 CVE-2018-13873
+
 * Mon Nov 9 2020 wangxiao <wangxiao65@huawei.com> - 1.8.20-9
 - fix CVE-2018-17233 CVE-2018-17234 CVE-2018-17237 CVE-2018-17434 CVE-2018-17437 CVE-2018-17438
 
