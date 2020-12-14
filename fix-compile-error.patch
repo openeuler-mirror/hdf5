@@ -1,0 +1,100 @@
+From aa52644d1f9e5a1103e4f670b56074c4e46a04f2 Mon Sep 17 00:00:00 2001
+From: lrknox <lrknox>
+Date: Fri, 11 May 2018 11:02:43 -0500
+Subject: [PATCH] Address compile errors and merge conflicts.
+
+---
+ src/H5Abtree2.c  | 2 +-
+ src/H5HFcache.c  | 2 +-
+ src/H5Ocache.c   | 4 ++--
+ src/H5T.c        | 8 +++-----
+ 4 files changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/src/H5Abtree2.c b/src/H5Abtree2.c
+index 02fffce21c..318c60d750 100644
+--- a/src/H5Abtree2.c
++++ b/src/H5Abtree2.c
+@@ -162,7 +162,7 @@ const H5B2_class_t H5A_BT2_CORDER[1]={{ /* B-tree class information */
+  *-------------------------------------------------------------------------
+  */
+ static herr_t
+-H5A__dense_fh_name_cmp(const void *obj, size_t obj_len, void *_udata)
++H5A_dense_fh_name_cmp(const void *obj, size_t obj_len, void *_udata)
+ {
+     H5A_fh_ud_cmp_t *udata = (H5A_fh_ud_cmp_t *)_udata;         /* User data for 'op' callback */
+     H5A_t *attr = NULL;                 /* Pointer to attribute created from heap object */
+diff --git a/src/H5HFcache.c b/src/H5HFcache.c
+index 319a865438..0d25dbf603 100644
+--- a/src/H5HFcache.c
++++ b/src/H5HFcache.c
+@@ -384,7 +384,7 @@ H5HF_cache_hdr_load(H5F_t *f, hid_t dxpl_id, haddr_t addr, void *_udata)
+         UINT32DECODE(p, hdr->pline_root_direct_filter_mask);
+ 
+         /* Decode I/O filter information */
+-        if(NULL == (pline = (H5O_pline_t *)H5O_msg_decode(hdr->f, udata->dxpl_id, NULL, H5O_PLINE_ID, len, image)))
++        if(NULL == (pline = (H5O_pline_t *)H5O_msg_decode(hdr->f, udata->dxpl_id, NULL, H5O_PLINE_ID, hdr->filter_len, p)))
+             HGOTO_ERROR(H5E_HEAP, H5E_CANTDECODE, NULL, "can't decode I/O pipeline filters")
+         p += hdr->filter_len;
+ 
+diff --git a/src/H5Ocache.c b/src/H5Ocache.c
+index ebae3f55bf..39f3ca330f 100644
+--- a/src/H5Ocache.c
++++ b/src/H5Ocache.c
+@@ -1288,7 +1288,7 @@ H5O_chunk_deserialize(H5O_t *oh, haddr_t addr, size_t len, const uint8_t *image,
+             unsigned ioflags = 0;   /* Flags for decode routine */
+ 
+             /* Decode continuation message */
+-            cont = (H5O_cont_t *)(H5O_MSG_CONT->decode)(udata->f, udata->dxpl_id, NULL, 0, &ioflags, oh->mesg[curmesg].raw);
++            cont = (H5O_cont_t *)(H5O_MSG_CONT->decode)(udata->f, udata->dxpl_id, NULL, 0, &ioflags, oh->mesg[curmesg].raw_size, oh->mesg[curmesg].raw);
+             cont->chunkno = udata->cont_msg_info->nmsgs + 1;	/*the next continuation message/chunk */
+ 
+             /* Save 'native' form of continuation message */
+@@ -1312,7 +1312,7 @@ H5O_chunk_deserialize(H5O_t *oh, haddr_t addr, size_t len, const uint8_t *image,
+ 
+             /* Decode ref. count message */
+             HDassert(oh->version > H5O_VERSION_1);
+-            refcount = (H5O_refcount_t *)(H5O_MSG_REFCOUNT->decode)(udata->f, udata->dxpl_id, NULL, 0, &ioflags, oh->mesg[curmesg].raw);
++            refcount = (H5O_refcount_t *)(H5O_MSG_REFCOUNT->decode)(udata->f, udata->dxpl_id, NULL, 0, &ioflags, oh->mesg[curmesg].raw_size, oh->mesg[curmesg].raw);
+ 
+             /* Save 'native' form of ref. count message */
+             oh->mesg[curmesg].native = refcount;
+diff --git a/src/H5T.c b/src/H5T.c
+index 9eeb7db193..36b4c63001 100644
+--- a/src/H5T.c
++++ b/src/H5T.c
+@@ -298,8 +298,6 @@ static herr_t H5T_unregister(H5T_pers_t pers, const char *name, H5T_t *src,
+ static herr_t H5T_register(H5T_pers_t pers, const char *name, H5T_t *src,
+             H5T_t *dst, H5T_conv_t func, hid_t dxpl_id, hbool_t api_call);
+ static htri_t H5T_compiler_conv(H5T_t *src, H5T_t *dst);
+-static herr_t H5T_encode(H5T_t *obj, unsigned char *buf, size_t *nalloc);
+-static H5T_t *H5T_decode(const unsigned char *buf);
+ static herr_t H5T_set_size(H5T_t *dt, size_t size);
+ 
+ 
+@@ -2839,7 +2837,7 @@ H5Tdecode(const void *buf)
+  *
+  *-------------------------------------------------------------------------
+  */
+-static herr_t
++herr_t
+ H5T_encode(H5T_t *obj, unsigned char *buf, size_t *nalloc)
+ {
+     size_t      buf_size;               /* Encoded size of datatype */
+@@ -2895,7 +2893,7 @@ H5T_encode(H5T_t *obj, unsigned char *buf, size_t *nalloc)
+  *
+  *-------------------------------------------------------------------------
+  */
+-static H5T_t *
++H5T_t *
+ H5T_decode(size_t buf_size, const unsigned char *buf)
+ {
+     H5F_t *f = NULL;            /* Fake file structure*/
+@@ -2916,7 +2914,7 @@ H5T_decode(size_t buf_size, const unsigned char *buf)
+         HGOTO_ERROR(H5E_DATATYPE, H5E_VERSION, NULL, "unknown version of encoded datatype")
+ 
+     /* Decode the serialized datatype message */
+-    if(NULL == (ret_value = (H5T_t *)H5O_msg_decode(f, H5AC_noio_dxpl_id, NULL, H5O_DTYPE_ID, buf_size, buf)))
++    if(NULL == (ret_value = (H5T_t *)H5O_msg_decode(f, H5AC_ind_dxpl_id, NULL, H5O_DTYPE_ID, buf_size, buf)))
+         HGOTO_ERROR(H5E_DATATYPE, H5E_CANTDECODE, NULL, "can't decode object")
+ 
+     /* Mark datatype as being in memory now */
