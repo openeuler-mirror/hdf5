@@ -9,7 +9,7 @@
 
 Name: hdf5
 Version: 1.8.20
-Release: 11
+Release: 12
 Summary: A data model, library, and file format for storing and managing data
 License: GPL
 
@@ -143,7 +143,7 @@ ln -s ../configure .
   %{configure_opts} \
   --enable-cxx
 sed -i -e 's! -shared ! -Wl,--as-needed\0!g' libtool
-make LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
+make %{?_smp_mflags} LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
 popd
 
 export CC=mpicc
@@ -168,7 +168,7 @@ do
     --datarootdir=%{_libdir}/$mpi/share \
     --mandir=%{_libdir}/$mpi/share/man
   sed -i -e 's! -shared ! -Wl,--as-needed\0!g' libtool
-  make LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
+  make %{?_smp_mflags} LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
   module purge
   popd
 done
@@ -233,7 +233,7 @@ cat > ${RPM_BUILD_ROOT}/%{_rpmmacrodir}/macros.hdf5 <<EOF
 EOF
 
 %check
-make -C build check
+make %{?_smp_mflags} -C build check
 %ldconfig_scriptlets
 
 %files
@@ -349,6 +349,9 @@ make -C build check
 %endif
 
 %changelog
+* Thu Mar 25 2021 maminjie <maminjie1@huawei.com> - 1.8.20-12
+- Support parallel compilation
+
 * Fri Jan 15 2021 yanan li <liyanan32@huawei.com> - 1.8.20-11
 - add sub packages hdf5-openmpi-static, hdf5-openmpi-devel, hdf5-openmpi,
 - hdf5-mpich-static, hdf5-mpich-devel, hdf5-mpich
