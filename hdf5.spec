@@ -1,6 +1,6 @@
 Name: hdf5
 Version: 1.8.20
-Release: 10
+Release: 11
 Summary: A data model, library, and file format for storing and managing data
 License: BSD
 
@@ -71,7 +71,7 @@ ln -s ../configure .
   %{configure_opts} \
   --enable-cxx
 sed -i -e 's! -shared ! -Wl,--as-needed\0!g' libtool
-make LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
+make %{?_smp_mflags} LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
 popd
 
 %install
@@ -122,7 +122,7 @@ cat > ${RPM_BUILD_ROOT}/%{_rpmmacrodir}/macros.hdf5 <<EOF
 EOF
 
 %check
-make -C build check
+make %{?_smp_mflags} -C build check
 %ldconfig_scriptlets
 
 %files
@@ -162,6 +162,9 @@ make -C build check
 %{_rpmmacrodir}/macros.hdf5
 
 %changelog
+* Thu Mar 25 2021 maminjie <maminjie1@huawei.com> - 1.8.20-11
+- Support parallel compilation
+
 * Mon Dec 14 2020 openEuler Buildteam <buildteam@openeuler.org> - 1.8.20-10
 - fix CVE-2017-17506 CVE-2018-17432 CVE-2018-17435 CVE-2018-13869 CVE-2018-13870 CVE-2018-13873
 
