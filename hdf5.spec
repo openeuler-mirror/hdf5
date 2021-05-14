@@ -1,8 +1,17 @@
+%global with_mpich 1
+%global with_openmpi 1
+%if %{with_mpich}
+%global mpi_list mpich
+%endif
+%if %{with_openmpi}
+%global mpi_list %{?mpi_list} openmpi
+%endif
+
 Name: hdf5
 Version: 1.8.20
-Release: 11
+Release: 12
 Summary: A data model, library, and file format for storing and managing data
-License: BSD
+License: GPL
 
 URL:     https://portal.hdfgroup.org/display/HDF5/HDF5
 Source0: https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.20/src/hdf5-1.8.20.tar.bz2
@@ -33,6 +42,8 @@ HDF5 is a data model, library, and file format for storing and managing data. It
 
 %package devel
 Summary: HDF5 development files
+Provides: hdf5-static = %{version}-%{release}
+Obsoletes: hdf5-static < %{version}-%{release}
 Requires: %{name}%{?_isa} = %{version}-%{release}
 Requires: libaec-devel%{?_isa}
 Requires: zlib-devel%{?_isa}
@@ -40,6 +51,67 @@ Requires: gcc-gfortran%{?_isa}
 
 %description devel
 HDF5 development headers and libraries.
+
+%if %{with_mpich}
+%package mpich
+Summary: HDF5 mpich libraries
+BuildRequires: mpich-devel
+Provides: %{name}-mpich2 = %{version}-%{release}
+Obsoletes: %{name}-mpich2 < %{version}-%{release}
+
+%description mpich
+HDF5 parallel mpich libraries
+
+
+%package mpich-devel
+Summary: HDF5 mpich development files
+Requires: %{name}-mpich%{?_isa} = %{version}-%{release}
+Requires: libaec-devel%{?_isa}
+Requires: zlib-devel%{?_isa}
+Requires: mpich-devel%{?_isa}
+Provides: %{name}-mpich2-devel = %{version}-%{release}
+Obsoletes: %{name}-mpich2-devel < %{version}-%{release}
+
+%description mpich-devel
+HDF5 parallel mpich development files
+
+%package mpich-static
+Summary: HDF5 mpich static libraries
+Requires: %{name}-mpich-devel%{?_isa} = %{version}-%{release}
+Provides: %{name}-mpich2-static = %{version}-%{release}
+Obsoletes: %{name}-mpich2-static < %{version}-%{release}
+
+%description mpich-static
+HDF5 parallel mpich static libraries
+%endif
+
+%if %{with_openmpi}
+%package openmpi
+Summary: HDF5 openmpi libraries
+BuildRequires: openmpi-devel
+
+%description openmpi
+HDF5 parallel openmpi libraries
+
+
+%package openmpi-devel
+Summary: HDF5 openmpi development files
+Requires: %{name}-openmpi%{?_isa} = %{version}-%{release}
+Requires: libaec-devel%{?_isa}
+Requires: zlib-devel%{?_isa}
+Requires: openmpi-devel%{?_isa}
+
+%description openmpi-devel
+HDF5 parallel openmpi development files
+
+
+%package openmpi-static
+Summary: HDF5 openmpi static libraries
+Requires: %{name}-openmpi-devel%{?_isa} = %{version}-%{release}
+
+%description openmpi-static
+HDF5 parallel openmpi static libraries
+%endif
 
 %prep
 %autosetup -n %{name}-%{version} -p1
@@ -74,6 +146,33 @@ sed -i -e 's! -shared ! -Wl,--as-needed\0!g' libtool
 make %{?_smp_mflags} LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
 popd
 
+export CC=mpicc
+export CXX=mpicxx
+export F9X=mpif90
+export LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
+for mpi in %{?mpi_list}
+do
+  mkdir $mpi
+  pushd $mpi
+  module load mpi/$mpi-%{_arch}
+  ln -s ../configure .
+  %configure \
+    %{configure_opts} \
+    FCFLAGS="$FCFLAGS -I$MPI_FORTRAN_MOD_DIR" \
+    --enable-parallel \
+    --exec-prefix=%{_libdir}/$mpi \
+    --libdir=%{_libdir}/$mpi/lib \
+    --bindir=%{_libdir}/$mpi/bin \
+    --sbindir=%{_libdir}/$mpi/sbin \
+    --includedir=%{_includedir}/$mpi-%{_arch} \
+    --datarootdir=%{_libdir}/$mpi/share \
+    --mandir=%{_libdir}/$mpi/share/man
+  sed -i -e 's! -shared ! -Wl,--as-needed\0!g' libtool
+  make %{?_smp_mflags} LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
+  module purge
+  popd
+done
+
 %install
 %make_install -C build
 %delete_la
@@ -91,6 +190,18 @@ exec $0-${BITS} "$@"
 EOF
 mkdir -p ${RPM_BUILD_ROOT}%{_fmoddir}
 mv ${RPM_BUILD_ROOT}%{_includedir}/*.mod ${RPM_BUILD_ROOT}%{_fmoddir}
+
+for mpi in %{?mpi_list}
+do
+  module load mpi/$mpi-%{_arch}
+  make -C $mpi install DESTDIR=${RPM_BUILD_ROOT}
+  rm $RPM_BUILD_ROOT/%{_libdir}/$mpi/lib/*.la
+  #Fortran modules
+  mkdir -p ${RPM_BUILD_ROOT}${MPI_FORTRAN_MOD_DIR}
+  mv ${RPM_BUILD_ROOT}%{_includedir}/${mpi}-%{_arch}/*.mod ${RPM_BUILD_ROOT}${MPI_FORTRAN_MOD_DIR}/
+  module purge
+done
+
 find ${RPM_BUILD_ROOT}%{_datadir} \( -name '*.[ch]*' -o -name '*.f90' \) -exec chmod -x {} +
 
 %ifarch x86_64
@@ -161,7 +272,87 @@ make %{?_smp_mflags} -C build check
 %{_libdir}/*.a
 %{_rpmmacrodir}/macros.hdf5
 
+%if %{with_mpich}
+%files mpich
+%license COPYING
+%doc MANIFEST README.txt release_docs/RELEASE.txt
+%doc release_docs/HISTORY*.txt
+%{_libdir}/mpich/bin/gif2h5
+%{_libdir}/mpich/bin/h52gif
+%{_libdir}/mpich/bin/h5copy
+%{_libdir}/mpich/bin/h5debug
+%{_libdir}/mpich/bin/h5diff
+%{_libdir}/mpich/bin/h5dump
+%{_libdir}/mpich/bin/h5import
+%{_libdir}/mpich/bin/h5jam
+%{_libdir}/mpich/bin/h5ls
+%{_libdir}/mpich/bin/h5mkgrp
+%{_libdir}/mpich/bin/h5redeploy
+%{_libdir}/mpich/bin/h5repack
+%{_libdir}/mpich/bin/h5perf
+%{_libdir}/mpich/bin/h5perf_serial
+%{_libdir}/mpich/bin/h5repart
+%{_libdir}/mpich/bin/h5stat
+%{_libdir}/mpich/bin/h5unjam
+%{_libdir}/mpich/bin/ph5diff
+%{_libdir}/mpich/lib/*.so.10*
+
+%files mpich-devel
+%{_includedir}/mpich-%{_arch}
+%{_fmoddir}/mpich/*.mod
+%{_libdir}/mpich/bin/h5pcc
+%{_libdir}/mpich/bin/h5pfc
+%{_libdir}/mpich/lib/lib*.so
+%{_libdir}/mpich/lib/lib*.settings
+%{_libdir}/mpich/share/hdf5_examples/
+
+%files mpich-static
+%{_libdir}/mpich/lib/*.a
+%endif
+
+%if %{with_openmpi}
+%files openmpi
+%license COPYING
+%doc MANIFEST README.txt release_docs/RELEASE.txt
+%doc release_docs/HISTORY*.txt
+%{_libdir}/openmpi/bin/gif2h5
+%{_libdir}/openmpi/bin/h52gif
+%{_libdir}/openmpi/bin/h5copy
+%{_libdir}/openmpi/bin/h5debug
+%{_libdir}/openmpi/bin/h5diff
+%{_libdir}/openmpi/bin/h5dump
+%{_libdir}/openmpi/bin/h5import
+%{_libdir}/openmpi/bin/h5jam
+%{_libdir}/openmpi/bin/h5ls
+%{_libdir}/openmpi/bin/h5mkgrp
+%{_libdir}/openmpi/bin/h5perf
+%{_libdir}/openmpi/bin/h5perf_serial
+%{_libdir}/openmpi/bin/h5redeploy
+%{_libdir}/openmpi/bin/h5repack
+%{_libdir}/openmpi/bin/h5repart
+%{_libdir}/openmpi/bin/h5stat
+%{_libdir}/openmpi/bin/h5unjam
+%{_libdir}/openmpi/bin/ph5diff
+%{_libdir}/openmpi/lib/*.so.10*
+
+%files openmpi-devel
+%{_includedir}/openmpi-%{_arch}
+%{_fmoddir}/openmpi/*.mod
+%{_libdir}/openmpi/bin/h5pcc
+%{_libdir}/openmpi/bin/h5pfc
+%{_libdir}/openmpi/lib/lib*.so
+%{_libdir}/openmpi/lib/lib*.settings
+%{_libdir}/openmpi/share/hdf5_examples/
+
+%files openmpi-static
+%{_libdir}/openmpi/lib/*.a
+%endif
+
 %changelog
+* Fri May 14 2021 caodongxia <caodongxia@huawei.com> - 1.8.20-12
+- add sub packages hdf5-openmpi-static, hdf5-openmpi-devel, hdf5-openmpi,
+- hdf5-mpich-static, hdf5-mpich-devel, hdf5-mpich
+
 * Thu Mar 25 2021 maminjie <maminjie1@huawei.com> - 1.8.20-11
 - Support parallel compilation
 
