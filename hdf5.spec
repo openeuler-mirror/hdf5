@@ -9,7 +9,7 @@
 
 Name: hdf5
 Version: 1.8.20
-Release: 12
+Release: 13
 Summary: A data model, library, and file format for storing and managing data
 License: GPL
 
@@ -143,7 +143,7 @@ ln -s ../configure .
   %{configure_opts} \
   --enable-cxx
 sed -i -e 's! -shared ! -Wl,--as-needed\0!g' libtool
-make %{?_smp_mflags} LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed"
+make %{?_smp_mflags} LDFLAGS="%{__global_ldflags} -fPIC -Wl,-z,now -Wl,--as-needed" FCFLAGS="$FCFLAGS -fallow-argument-mismatch -fallow-invalid-boz"
 popd
 
 export CC=mpicc
@@ -158,7 +158,7 @@ do
   ln -s ../configure .
   %configure \
     %{configure_opts} \
-    FCFLAGS="$FCFLAGS -I$MPI_FORTRAN_MOD_DIR" \
+    FCFLAGS="$FCFLAGS -I$MPI_FORTRAN_MOD_DIR -fallow-argument-mismatch -fallow-invalid-boz" \
     --enable-parallel \
     --exec-prefix=%{_libdir}/$mpi \
     --libdir=%{_libdir}/$mpi/lib \
@@ -349,6 +349,9 @@ make %{?_smp_mflags} -C build check
 %endif
 
 %changelog
+* Mon Aug 2 2021 liushaofei <liushaofei5@huawei.com> - 1.8.20-13
+- fix incorrect arguments format
+
 * Thu Mar 25 2021 maminjie <maminjie1@huawei.com> - 1.8.20-12
 - Support parallel compilation
 
