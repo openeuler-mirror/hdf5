@@ -9,7 +9,7 @@
 
 Name: hdf5
 Version: 1.8.20
-Release: 13
+Release: 14
 Summary: A data model, library, and file format for storing and managing data
 License: GPL
 
@@ -35,7 +35,7 @@ BuildRequires: gcc, gcc-c++
 BuildRequires: krb5-devel, openssl-devel, zlib-devel, gcc-gfortran, time
 BuildRequires: automake libtool
 BuildRequires: openssh-clients
-BuildRequires: libaec-devel
+BuildRequires: libaec-devel chrpath
 
 %description
 HDF5 is a data model, library, and file format for storing and managing data. It supports an unlimited variety of datatypes, and is designed for flexible and efficient I/O and for high volume and complex data. HDF5 is portable and is extensible, allowing applications to evolve in their use of HDF5. The HDF5 Technology suite includes tools and applications for managing, manipulating, viewing, and analyzing data in the HDF5 format.
@@ -232,9 +232,24 @@ cat > ${RPM_BUILD_ROOT}/%{_rpmmacrodir}/macros.hdf5 <<EOF
 %%_hdf5_version %{version}
 EOF
 
+cd  $RPM_BUILD_ROOT/usr
+file `find -type f`| grep -w ELF | awk -F":" '{print $1}' | for i in `xargs`
+do
+  chrpath -d $i
+done
+cd -
+mkdir -p  $RPM_BUILD_ROOT/etc/ld.so.conf.d
+echo "%{_libdir}/mpich/lib" > $RPM_BUILD_ROOT/etc/ld.so.conf.d/%{name}-%{_arch}.conf
+
 %check
 make %{?_smp_mflags} -C build check
 %ldconfig_scriptlets
+
+%post
+/sbin/ldconfig
+
+%postun
+/sbin/ldconfig
 
 %files
 %license COPYING
@@ -258,6 +273,7 @@ make %{?_smp_mflags} -C build check
 %{_libdir}/*.so.10*
 %{_libdir}/libhdf5_cpp.so.15*
 %{_libdir}/libhdf5_hl_cpp.so.11*
+%config(noreplace) /etc/ld.so.conf.d/*
 
 %files devel
 %{_bindir}/h5c++*
@@ -349,6 +365,9 @@ make %{?_smp_mflags} -C build check
 %endif
 
 %changelog
+* Fri Sep 10 2021 wangyue <wangyue92@huawei.com> - 1.8.20-14
+- fix rpath error
+
 * Mon Aug 2 2021 liushaofei <liushaofei5@huawei.com> - 1.8.20-13
 - fix incorrect arguments format
 
