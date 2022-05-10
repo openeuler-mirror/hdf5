@@ -9,9 +9,9 @@
 
 Name: hdf5
 Version: 1.8.20
-Release: 14
+Release: 15
 Summary: A data model, library, and file format for storing and managing data
-License: GPL
+License: GPL-2.0-or-later
 
 URL:     https://portal.hdfgroup.org/display/HDF5/HDF5
 Source0: https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.8/hdf5-1.8.20/src/hdf5-1.8.20.tar.bz2
@@ -365,6 +365,9 @@ make %{?_smp_mflags} -C build check
 %endif
 
 %changelog
+* Tue May 10 2022 Ge Wang <wangge20@h-partner.com> - 1.8.20-15
+- License compliance rectification
+
 * Fri Sep 10 2021 wangyue <wangyue92@huawei.com> - 1.8.20-14
 - fix rpath error
 
